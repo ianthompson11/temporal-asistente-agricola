@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/js/all.min.js"></script>
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Asistente Agrícola Inteligente</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-[url('https://unsplash.com/photos/DUPFowqI6oI/download?ixid=M3wxMjA3fDB8MXxhbGx8fHx8fHx8fHwxNzUyODc2MTgyfA&force=true')] bg-cover bg-center font-sans text-gray-800 p-4">
+    <!-- DATOS EN TIEMPO REAL DESDE ESP32 -->
+    <div class="p-4 backdrop-blur-md bg-transparent rounded-xl shadow-md text-center max-w-md mx-auto mt-6">
+        <h2 class="text-xl font-bold mb-4">📡 Datos del Cultivo</h2>
+        <div id="sensorData" class="space-y-2 text-lg">
+            <p>🌡️ Temperatura: <span id="temp">--</span> °C</p>
+            <p>💧 Humedad: <span id="hum">--</span> %</p>
+            <p>☀️ Luminosidad: <span id="light">--</span> %</p>
+        </div>
+    </div>
+
+    <!-- CHATBOT CON VOZ -->
+    <div class="p-4 backdrop-blur-md bg-transparent rounded-xl shadow-md mt-6">
+        <h2 class="text-xl font-bold mb-4">🎙️ Asistente Agrícola Inteligente</h2>
+        <div id="chatBox" class="border h-40 overflow-y-auto p-2 rounded mb-2 bg-gray-50 text-sm"></div>
+        <div class="flex gap-2 items-center">
+            <input id="userInput" type="text" placeholder="Haz una pregunta sobre tu cultivo..." class="border rounded px-3 py-2 w-full" />
+            <button onclick="activarVoz()" class="bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600">
+                🎤
+            </button>
+            <button onclick="enviarPregunta()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                Enviar
+            </button>
+        </div>
+    </div>
+
+    <!-- SUBIR Y CLASIFICAR IMÁGENES -->
+    <div class="p-4 backdrop-blur-md bg-transparent rounded-xl shadow-md mt-6" id="contenedorImagenes">
+        <h2 class="text-xl font-bold mb-4">🌱 Subir y Detectar</h2>
+        <div class="flex flex-col gap-2">
+            <input type="file" id="inputImagen" accept="image/*" class="border rounded px-3 py-2" onchange="mostrarImagen(event)">
+            <label class="text-sm">Seleccionar modelo de visión:</label>
+            <select id="modeloVision" class="border rounded px-3 py-2">
+                <option value="deteccion_plagas">Detección de Plagas</option>
+                <option value="deteccion_enfermedades">Detección de Enfermedades</option>
+                <option value="plant_protect">Detección de Plantas</option>
+            </select>
+            <img id="vistaPrevia" class="hidden mt-2 max-w-xs" alt="Vista previa de la imagen">
+            <img id="imagenResultado" class="hidden mt-4 max-w-xs border rounded" alt="Resultado anotado"> 
+            <button id="clasificarHoja" onclick="clasificarHoja()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mt-2">Clasificar Hoja</button>
+            <button id="predecirSalud" onclick="predecirSalud()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mt-2">Predecir Salud</button>
+            <button id="recomendarAccion" onclick="recomendarAccion()" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 mt-2">Recomendar Acción</button>
+            <button id="hablarAsistente" onclick="hablarConAsistente()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 mt-2">Hablar con Asistente</button>
+            <button onclick="enviarYOLO()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 mt-2">🔍 Analizar Imagen con Visión Artificial</button>
+            <div id="resultado" class="mt-4 text-lg"></div>
+        </div>
+    </div>
+
+    <!-- DETECCIÓN EN TIEMPO REAL -->
+    <div class="p-4 backdrop-blur-md bg-transparent rounded-xl shadow-md mt-6">
+        <h2 class="text-xl font-bold mb-4">📹 Detección en Tiempo Real</h2>
+        <div class="flex flex-col gap-2">
+            <video id="webcam" autoplay playsinline class="max-w-xs border rounded"></video>
+            <img id="annotatedFrame" class="max-w-xs border rounded hidden" alt="Frame anotado">
+            <canvas id="canvas" class="hidden"></canvas>
+            <button id="startWebcam" onclick="startWebcam()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mt-2">Iniciar Webcam</button>
+            <button id="stopWebcam" onclick="stopWebcam()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 mt-2 hidden">Detener Webcam</button>
+            <div id="realtimeResult" class="mt-4 text-lg"></div>
+        </div>
+    </div>
+
+    <!-- Cargar script.js -->
+    <script src="script.js"></script>
+
+    <!-- Funciones específicas para index.html -->
+    <script>
+        let stream = null;
+
+        async function actualizarSensores() {
+            try {
+                const res = await fetch("/api/sensores");
+                const data = await res.json();
+                document.getElementById("temp").textContent = data.temperatura ?? "--";
+                document.getElementById("hum").textContent = data.humedad ?? "--";
+                document.getElementById("light").textContent = data.luz ?? "--";
+            } catch (error) {
+                console.error("No se pudieron obtener datos del ESP32:", error);
+            }
+        }
+
+        async function activarVoz() {
+            const reconocimiento = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            reconocimiento.lang = "es-ES";
+            reconocimiento.onresult = function(event) {
+                const texto = event.results[0][0].transcript;
+                document.getElementById("userInput").value = texto;
+                enviarPregunta();
+            };
+            reconocimiento.onerror = function(event) {
+                console.error("Error de reconocimiento:", event.error);
+            };
+            reconocimiento.start();
+        }
+
+        async function startWebcam() {
+            try {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error("El navegador no soporta la API de webcam (navigator.mediaDevices no está disponible). Usa un navegador moderno y asegúrate de estar en un contexto seguro (HTTPS o localhost).");
+                }
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: "environment" }
+                    });
+                    console.log("Cámara trasera iniciada");
+                } catch (rearError) {
+                    console.warn("No se pudo acceder a la cámara trasera, intentando con la cámara frontal:", rearError);
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: "user" }
+                    });
+                    console.log("Cámara frontal iniciada");
+                }
+                const webcam = document.getElementById('webcam');
+                webcam.srcObject = stream;
+                document.getElementById('startWebcam').classList.add('hidden');
+                document.getElementById('stopWebcam').classList.remove('hidden');
+                document.getElementById('annotatedFrame').classList.remove('hidden');
+                console.log("Webcam iniciada correctamente");
+                processFrame();
+            } catch (error) {
+                console.error("Error al iniciar la webcam:", error.name, error.message);
+                document.getElementById('realtimeResult').textContent = `Error al iniciar la webcam: ${error.message}`;
+            }
+        }
+
+        function stopWebcam() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+                document.getElementById('webcam').srcObject = null;
+                document.getElementById('annotatedFrame').src = '';
+                document.getElementById('annotatedFrame').classList.add('hidden');
+                document.getElementById('startWebcam').classList.remove('hidden');
+                document.getElementById('stopWebcam').classList.add('hidden');
+                document.getElementById('realtimeResult').textContent = "";
+            }
+        }
+
+        async function processFrame() {
+            if (!stream) return;
+            const video = document.getElementById('webcam');
+            const canvas = document.getElementById('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const formData = new FormData();
+            formData.append('image', canvas.toDataURL('image/jpeg', 0.7));
+            formData.append('model', 'plant_protect');
+            try {
+                const response = await fetch('/predict_stream', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                console.log("Respuesta de /predict_stream:", result);
+                if (result.error) {
+                    document.getElementById('realtimeResult').textContent = `Error: ${result.error}`;
+                    console.error("Error en la respuesta:", result.error);
+                } else if (result.image) {
+                    document.getElementById('annotatedFrame').src = `data:image/jpeg;base64,${result.image}`;
+                    document.getElementById('realtimeResult').textContent = result.detections.length > 0 
+                        ? `Detecciones: ${result.detections.map(d => `${d.name} (conf: ${d.conf.toFixed(2)})`).join(', ')}`
+                        : "No se detectaron objetos.";
+                } else {
+                    console.error("No se recibió imagen en la respuesta:", result);
+                    document.getElementById('realtimeResult').textContent = "No se recibió imagen procesada.";
+                }
+            } catch (error) {
+                console.error("Error al procesar el frame:", error);
+                document.getElementById('realtimeResult').textContent = "Error al procesar el frame.";
+            }
+            if (stream) {
+                setTimeout(processFrame, 200); // ~5 FPS para estabilidad
+            }
+        }
+
+        setInterval(actualizarSensores, 5000);
+        actualizarSensores();
+    </script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f3f4f6;
+  color: #111;
+}
+
+header {
+  background-color: #228B22;
+  color: white;
+  text-align: center;
+  padding: 1.5rem;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+main {
+  padding: 1rem;
+}
+
+section {
+  background-color: white;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+section h2 {
+  margin-top: 0;
+  color: #2e7d32;
+}
+
+ul {
+  padding-left: 1.2rem;
+}
+
+footer {
+  text-align: center;
+  padding: 1rem;
+  font-size: 0.9rem;
+  background-color: #e0e0e0;
+}
+
+#contenedorImagenes {
+  margin-top: 20px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  display: block; /* Asegura que se muestre */
+}
+
+#vistaPrevia {
+  max-width: 300px;
+  border-radius: 8px;
+  margin-top: 10px;
+  border: 1px solid #ccc;
+}
+
+/* NUEVO: Imagen resultado del modelo YOLO */
+#imagenResultado {
+  max-width: 300px;
+  border-radius: 8px;
+  margin-top: 10px;
+  border: 2px solid #2e7d32;
+  display: block;
+}
+
+/* NUEVO: Caja de resultados del modelo YOLO */
+#detecciones {
+  background-color: #f5f5f5;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 8px;
+  max-width: 100%;
+  overflow-x: auto;
+  font-family: monospace;
+  white-space: pre-wrap;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+/* NUEVO: Selector de modelo */
+#modeloVision {
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #bbb;
+  background-color: #fff;
+  width: fit-content;
+}
