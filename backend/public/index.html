@@ -102,6 +102,50 @@
             };
             reconocimiento.start();
         }
+        async function enviarYOLO() {
+          const inputFile = document.getElementById("inputImagen");
+          const modelo = document.getElementById("modeloVision").value;
+
+          if (!inputFile.files.length) {
+              alert("Por favor, selecciona una imagen.");
+              return;
+          }
+
+          const formData = new FormData();
+          formData.append("model", modelo);
+          formData.append("image", inputFile.files[0]);
+
+          try {
+              const res = await fetch("/predict", {
+                  method: "POST",
+                  body: formData,
+              });
+              const data = await res.json();
+
+              if (data.error) {
+                  document.getElementById("resultado").textContent = `Error: ${data.error}`;
+                  return;
+              }
+
+              // Mostrar imagen anotada
+              const img = document.getElementById("imagenResultado");
+              img.src = `data:image/jpeg;base64,${data.image}`;
+              img.classList.remove("hidden");
+
+              // Mostrar resultado textual debajo
+              document.getElementById("resultado").textContent = data.descripcion_texto || "Análisis completado.";
+
+              // Reemplazar el input del LLM
+              if (data.descripcion_texto) {
+                  document.getElementById("userInput").value = data.descripcion_texto;
+              }
+
+          } catch (error) {
+              console.error("Error al enviar imagen:", error);
+              document.getElementById("resultado").textContent = "Error al procesar la imagen.";
+          }
+        }
+
 
         async function startWebcam() {
             try {

@@ -133,6 +133,9 @@ async function enviarPregunta() {
   const pregunta = input.value.trim();
   if (pregunta === "") return;
 
+  // ✅ Limpiar el campo de entrada inmediatamente
+  input.value = "";
+
   chat.innerHTML += `<div><strong>Tú:</strong> ${pregunta}</div>`;
 
   try {
@@ -156,5 +159,4 @@ async function enviarPregunta() {
   }
 
   chat.scrollTop = chat.scrollHeight;
-  input.value = "";
 }

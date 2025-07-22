@@ -174,10 +174,40 @@ def predict():
 
             detections = json.loads(results[0].tojson()) if results[0].boxes else []
 
-        return jsonify({"image": encoded_img, "detections": detections})
+        # ---- Generar descripción textual basada en las detecciones ----
+        if detections:
+            # Extraer nombres, corregir y eliminar duplicados preservando orden
+            nombres_raw = [d.get("name", "objeto desconocido").lower() for d in detections]
+
+            # Tabla de correcciones (puedes ampliarla según tus etiquetas reales)
+            correcciones = {
+                "arana roja": "araña roja",
+                "mosca blanca": "mosca blanca",
+                "roya": "roya",
+                # agrega más si tu modelo tiene etiquetas con errores
+            }
+
+            nombres_corregidos = [correcciones.get(n, n) for n in nombres_raw]
+
+            # Eliminar duplicados preservando orden
+            nombres_unicos = list(dict.fromkeys(nombres_corregidos))
+
+            # Construir descripción final
+            descripcion_texto = "¿Qué es " + " y ".join(nombres_unicos) + "?"
+        else:
+            descripcion_texto = "No se detectaron objetos."
+
+        # ---- Enviar resultado completo al frontend ----
+        return jsonify({
+            "image": encoded_img,
+            "detections": detections,
+            "descripcion_texto": descripcion_texto
+        })
+
     except Exception as e:
         logger.error(f"Error en /predict: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/predict_stream", methods=["POST"])
 def predict_stream():
