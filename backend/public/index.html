@@ -39,21 +39,19 @@
     <div class="p-4 backdrop-blur-md bg-transparent rounded-xl shadow-md mt-6" id="contenedorImagenes">
         <h2 class="text-xl font-bold mb-4">🌱 Subir y Detectar</h2>
         <div class="flex flex-col gap-2">
-            <input type="file" id="inputImagen" accept="image/*" class="border rounded px-3 py-2" onchange="mostrarImagen(event)">
+            <input type="file" id="inputImagen" accept="image/*" class="rounded py-2" onchange="mostrarImagen(event)">
             <label class="text-sm">Seleccionar modelo de visión:</label>
             <select id="modeloVision" class="border rounded px-3 py-2">
                 <option value="deteccion_plagas">Detección de Plagas</option>
                 <option value="deteccion_enfermedades">Detección de Enfermedades</option>
                 <option value="plant_protect">Detección de Plantas</option>
             </select>
-            <img id="vistaPrevia" class="hidden mt-2 max-w-xs" alt="Vista previa de la imagen">
-            <img id="imagenResultado" class="hidden mt-4 max-w-xs border rounded" alt="Resultado anotado"> 
-            <button id="clasificarHoja" onclick="clasificarHoja()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mt-2">Clasificar Hoja</button>
-            <button id="predecirSalud" onclick="predecirSalud()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mt-2">Predecir Salud</button>
-            <button id="recomendarAccion" onclick="recomendarAccion()" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 mt-2">Recomendar Acción</button>
-            <button id="hablarAsistente" onclick="hablarConAsistente()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 mt-2">Hablar con Asistente</button>
+            <div id="previewContainer" class="flex flex-wrap gap-4 mt-2 items-start">
+                <img id="vistaPrevia" class="hidden max-w-xs border rounded" alt="Vista previa de la imagen">
+                <img id="imagenResultado" class="hidden max-w-xs border rounded" alt="Resultado anotado"> 
+            </div>
             <button onclick="enviarYOLO()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 mt-2">🔍 Analizar Imagen con Visión Artificial</button>
-            <div id="resultado" class="mt-4 text-lg"></div>
+            <div id="resultado" class="text-transparent"></div>
         </div>
     </div>
 
@@ -61,8 +59,10 @@
     <div class="p-4 backdrop-blur-md bg-transparent rounded-xl shadow-md mt-6">
         <h2 class="text-xl font-bold mb-4">📹 Detección en Tiempo Real</h2>
         <div class="flex flex-col gap-2">
-            <video id="webcam" autoplay playsinline class="max-w-xs border rounded"></video>
-            <img id="annotatedFrame" class="max-w-xs border rounded hidden" alt="Frame anotado">
+            <div class="flex gap-4">
+            <video id="webcam" autoplay playsinline class="max-w-xs rounded hidden"></video>
+            <img id="annotatedFrame" class="max-w-xs rounded hidden" alt="Frame anotado">
+            </div>
             <canvas id="canvas" class="hidden"></canvas>
             <button id="startWebcam" onclick="startWebcam()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mt-2">Iniciar Webcam</button>
             <button id="stopWebcam" onclick="stopWebcam()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 mt-2 hidden">Detener Webcam</button>
@@ -169,6 +169,7 @@
                 document.getElementById('startWebcam').classList.add('hidden');
                 document.getElementById('stopWebcam').classList.remove('hidden');
                 document.getElementById('annotatedFrame').classList.remove('hidden');
+                document.getElementById("webcam").classList.remove("hidden");
                 console.log("Webcam iniciada correctamente");
                 processFrame();
             } catch (error) {
