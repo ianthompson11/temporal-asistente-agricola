@@ -1,7 +1,7 @@
+from unsloth import FastLanguageModel
 from flask import Flask, request, jsonify, send_from_directory, render_template_string
 from flask_cors import CORS
 from transformers import pipeline
-from unsloth import FastLanguageModel
 import torch
 import logging
 import requests
@@ -32,17 +32,46 @@ model, tokenizer = FastLanguageModel.from_pretrained(
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
+# Agrega una lista para almacenar el historial de la conversación
+conversation_history = []
+
 def generar_respuesta(prompt, max_new_tokens=300):
-    inputs = tokenizer(prompt, return_tensors="pt").to(device)
+    global conversation_history
+    
+    # Añade la nueva pregunta al historial
+    conversation_history.append({"role": "user", "content": prompt})
+    
+    # Construye el prompt con el historial
+    formatted_prompt = "Instrucciones: Responde únicamente con la información solicitada, manteniendo el contexto de la conversación anterior.\n\n"
+    for message in conversation_history:
+        if message["role"] == "user":
+            formatted_prompt += f"Pregunta: {message['content']}\n"
+        else:
+            formatted_prompt += f"Respuesta: {message['content']}\n"
+    formatted_prompt += "Respuesta:"
+    
+    # Tokeniza y genera la respuesta
+    inputs = tokenizer(formatted_prompt, return_tensors="pt").to(device)
     output_ids = model.generate(
         **inputs,
         max_new_tokens=max_new_tokens,
         do_sample=True,
-        temperature=0.7,
-        top_p=0.9,
+        temperature=0.5,
+        top_p=0.85,
         eos_token_id=tokenizer.eos_token_id,
     )
     respuesta = tokenizer.decode(output_ids[0], skip_special_tokens=True)
+    
+    # Limpia la respuesta
+    respuesta = respuesta.replace(formatted_prompt, "").strip()
+    
+    # Añade la respuesta al historial
+    conversation_history.append({"role": "assistant", "content": respuesta})
+    
+    # Opcional: Limita el historial para no exceder max_seq_length
+    if len(tokenizer.encode(formatted_prompt)) > max_seq_length * 0.8:
+        conversation_history.pop(0)  # Elimina el mensaje más antiguo si es necesario
+    
     return respuesta
 
 # ---------------- CONFIGURACIÓN GENERAL ----------------
