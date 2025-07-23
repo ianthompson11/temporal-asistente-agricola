@@ -34,24 +34,35 @@ model.to(device)
 
 # Agrega una lista para almacenar el historial de la conversación
 conversation_history = []
+MAX_HISTORY = 6
 
 def generar_respuesta(prompt, max_new_tokens=300):
     global conversation_history
-    
-    # Añade la nueva pregunta al historial
+
+    # Añadir la pregunta
     conversation_history.append({"role": "user", "content": prompt})
-    
-    # Construye el prompt con el historial
-    formatted_prompt = "Instrucciones: Responde únicamente con la información solicitada, manteniendo el contexto de la conversación anterior.\n\n"
+
+    # Limitar historial
+    while len(conversation_history) > MAX_HISTORY:
+        conversation_history.pop(0)
+
+    # Construir prompt
+    formatted_prompt = (
+        "Eres un asistente conversacional. Responde sólo a la última pregunta, "
+        "manteniendo coherencia con la conversación previa.\n\n"
+        "Conversación:\n"
+    )
     for message in conversation_history:
         if message["role"] == "user":
-            formatted_prompt += f"Pregunta: {message['content']}\n"
+            formatted_prompt += f"Usuario: {message['content']}\n"
         else:
-            formatted_prompt += f"Respuesta: {message['content']}\n"
-    formatted_prompt += "Respuesta:"
-    
-    # Tokeniza y genera la respuesta
+            formatted_prompt += f"Asistente: {message['content']}\n"
+    formatted_prompt += "Asistente:"
+
+    # Tokenizar
     inputs = tokenizer(formatted_prompt, return_tensors="pt").to(device)
+
+    # Generar respuesta
     output_ids = model.generate(
         **inputs,
         max_new_tokens=max_new_tokens,
@@ -59,19 +70,14 @@ def generar_respuesta(prompt, max_new_tokens=300):
         temperature=0.5,
         top_p=0.85,
         eos_token_id=tokenizer.eos_token_id,
+        pad_token_id=tokenizer.eos_token_id,
     )
-    respuesta = tokenizer.decode(output_ids[0], skip_special_tokens=True)
-    
-    # Limpia la respuesta
-    respuesta = respuesta.replace(formatted_prompt, "").strip()
-    
-    # Añade la respuesta al historial
+    generated_ids = output_ids[:, inputs["input_ids"].shape[-1]:]
+    respuesta = tokenizer.decode(generated_ids[0], skip_special_tokens=True).strip()
+
+    # Guardar respuesta
     conversation_history.append({"role": "assistant", "content": respuesta})
-    
-    # Opcional: Limita el historial para no exceder max_seq_length
-    if len(tokenizer.encode(formatted_prompt)) > max_seq_length * 0.8:
-        conversation_history.pop(0)  # Elimina el mensaje más antiguo si es necesario
-    
+
     return respuesta
 
 # ---------------- CONFIGURACIÓN GENERAL ----------------
